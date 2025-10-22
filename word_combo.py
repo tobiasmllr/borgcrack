@@ -6,7 +6,6 @@ Each word is used at most once per combination.
 
 import sys
 from itertools import permutations
-from pathlib import Path
 
 
 def read_words(input_file):

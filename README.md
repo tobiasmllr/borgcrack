@@ -37,18 +37,21 @@ uv run borg_crack.py input/wordlist_combined.txt 12 sample/config
 Generate all permutations of words from an input file. Each word is used at most once per combination.
 
 ```bash
-uv run word_combo.py <input_wordfile> [output_file]
+uv run word_combo.py <input_wordfile> [output_file] [min_chars] [max_chars]
 ```
 
 **Arguments:**
 - `input_wordfile`: Path to file containing seed words (one per line)
 - `output_file`: Path for output wordlist (default: `output/words_combined.txt`)
+- `min_chars`: Minimum character length for generated combinations (optional)
+- `max_chars`: Maximum character length for generated combinations (optional)
+
 
 **Example:**
 ```bash
 # Create wordlist from seeds
 echo -e "word1\nword2\nword3" > input/words.txt
-uv run word_combo.py input/words.txt output/words_combined.txt
+uv run word_combo.py input/words.txt output/words_combined.txt 8 12
 
 # This generates:
 # word1, word2, word3
