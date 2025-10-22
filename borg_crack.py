@@ -147,14 +147,14 @@ def crack_borg_key(config_file, wordlist_file, num_workers=None):
         print(f"Rate: {(i/elapsed):.2f} passwords/second")
 
         # Append found password to file
-        with open("found_passwords.txt", 'a') as f:
+        with open("output/found_passwords.txt", 'a') as f:
             # timestamp
             t = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
             f.write(f"# Cracked on {t}\n")
             f.write(f"# Config file: {config_file}\n")
             f.write(f"# Wordlist file: {wordlist_file}\n")
             f.write(f"Password: {found_password}\n")
-        print(f"\nPassword saved to: found_passwords.txt")
+        print(f"\nPassword saved to: output/found_passwords.txt")
 
         return found_password
     else:
@@ -170,11 +170,11 @@ def crack_borg_key_cli():
         print("\nOptions:")
         print("  wordlist.txt  - Path to password wordlist")
         print("  num_workers   - Number of worker processes (default: CPU count)")
-        print("  config_file   - Path to Borg config file (default: config)")
+        print("  config_file   - Path to Borg config file (default: input/config)")
         sys.exit(1)
 
     wordlist_file = sys.argv[1]
-    config_file = "config"
+    config_file = "input/config"
     num_workers = None
 
     if len(sys.argv) >= 3:

@@ -47,12 +47,14 @@ def generate_combinations(words, output_file):
 
 def main():
     if len(sys.argv) < 2:
-        print(f"Usage: {sys.argv[0]} <input_wordfile> [output_file]")
-        print(f"Example: {sys.argv[0]} words.txt words_combined.txt")
+        print(f"Example: {sys.argv[0]} input/words.txt output/words_combined.txt")
+        print(f"\nArguments:")
+        print(f"  input_wordfile - Path to file with seed words (one per line)")
+        print(f"  output_file    - Output file path (default: output/words_combined.txt)")
         sys.exit(1)
 
     input_file = sys.argv[1]
-    output_file = sys.argv[2] if len(sys.argv) > 2 else "words_combined.txt"
+    output_file = sys.argv[2] if len(sys.argv) > 2 else "output/words_combined.txt"
 
     print("Generating word combinations...")
 

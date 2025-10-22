@@ -26,10 +26,10 @@ uv sync
 
 ```bash
 # Generate a wordlist from seed words
-uv run word_combo.py sample/wordlist.txt sample/wordlist_combined.txt
+uv run word_combo.py sample/wordlist.txt input/wordlist_combined.txt
 
 # Crack a Borg backup password
-uv run borg_crack.py sample/wordlist_combined.txt 12 sample/config
+uv run borg_crack.py input/wordlist_combined.txt 12 sample/config
 ```
 
 ### Word Combination Generator
@@ -42,13 +42,13 @@ uv run word_combo.py <input_wordfile> [output_file]
 
 **Arguments:**
 - `input_wordfile`: Path to file containing seed words (one per line)
-- `output_file`: Path for output wordlist (default: `words_combined.txt`)
+- `output_file`: Path for output wordlist (default: `output/words_combined.txt`)
 
 **Example:**
 ```bash
 # Create wordlist from seeds
-echo -e "word1\nword2\nword3" > words.txt
-uv run word_combo.py words.txt words_combined.txt
+echo -e "word1\nword2\nword3" > input/words.txt
+uv run word_combo.py input/words.txt output/words_combined.txt
 
 # This generates:
 # word1, word2, word3
@@ -87,7 +87,7 @@ uv run borg_crack.py passwords.txt /path/to/config
 ```
 
 **Output:**
-When a password is found, it's displayed on screen and appended to `found_passwords.txt` with metadata:
+When a password is found, it's displayed on screen and appended to `output/found_passwords.txt` with metadata:
 ```
 # Cracked on 2025-10-21 23:45:12
 # Config file: sample/config
