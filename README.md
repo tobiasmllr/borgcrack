@@ -51,10 +51,9 @@ uv run word_combo.py <input_wordfile> [output_file] [min_chars] [max_chars]
 ```bash
 # Create wordlist from seeds
 echo -e "word1\nword2\nword3" > input/words.txt
-uv run word_combo.py input/words.txt output/words_combined.txt 8 12
+uv run word_combo.py input/words.txt output/words_combined.txt 8 16
 
 # This generates:
-# word1, word2, word3
 # word1word2, word1word3, word2word1, word2word3, word3word1, word3word2
 # word1word2word3, word1word3word2, word2word1word3, etc.
 ```
