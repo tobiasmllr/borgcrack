@@ -1,11 +1,12 @@
 # BorgCrack
 
-BorgCrack is a password recovery tool for the slightly forgetful users of Borg backup repositories. You input the repository config file (see `sample/config`) and a list of words or symbols that you remember that the password was comprised of (see `sample/wordlist.txt`). After the generation of all permutations of possible passwords using `word_combo.py`, you can then run the brute force decryption attempts in parallel with `borg_crack.py`. 
+BorgCrack is a password recovery tool for the slightly forgetful users of Borg backup repositories. You input the repository config file (see `sample/config`) and a list of words or symbols that you remember that the password was comprised of (see `sample/wordlist.txt`). After the generation of all permutations of possible passwords using `word_combo.py`, you can then run the brute force decryption attempts in parallel with `borg_crack.py`.
 
 ## Features
 
-- **Multi-threaded cracking**: Uses multiprocessing to distribute password testing across CPU cores
-- **Wordlist generation**: Create comprehensive wordlists from seed words using permutations
+-   **Multi-threaded cracking**: Uses multiprocessing to distribute password testing across CPU cores
+-   **Multiple config support**: Test the same password against multiple Borg repositories simultaneously with no performance loss
+-   **Wordlist generation**: Create comprehensive wordlists from seed words using permutations
 
 ## Installation
 
@@ -41,13 +42,14 @@ uv run word_combo.py <input_wordfile> [output_file] [min_chars] [max_chars]
 ```
 
 **Arguments:**
-- `input_wordfile`: Path to file containing seed words (one per line)
-- `output_file`: Path for output wordlist (default: `output/words_combined.txt`)
-- `min_chars`: Minimum character length for generated combinations (optional)
-- `max_chars`: Maximum character length for generated combinations (optional)
 
+-   `input_wordfile`: Path to file containing seed words (one per line)
+-   `output_file`: Path for output wordlist (default: `output/words_combined.txt`)
+-   `min_chars`: Minimum character length for generated combinations (optional)
+-   `max_chars`: Maximum character length for generated combinations (optional)
 
 **Example:**
+
 ```bash
 # Create wordlist from seeds
 echo -e "word1\nword2\nword3" > input/words.txt
@@ -59,24 +61,27 @@ uv run word_combo.py input/words.txt output/words_combined.txt 8 16
 ```
 
 **Warning:** The number of combinations grows factorially with the number of input words:
-- 5 words --> 325 combinations
-- 10 words --> 9,864,100 combinations
-- 15 words --> ~1.3 trillion combinations
+
+-   5 words --> 325 combinations
+-   10 words --> 9,864,100 combinations
+-   15 words --> ~1.3 trillion combinations
 
 ### Borg Password Cracker
 
-Attempt to crack a Borg backup password using a wordlist.
+Attempt to crack a Borg backup password using a wordlist. Supports testing multiple config files simultaneously.
 
 ```bash
-uv run borg_crack.py <wordlist.txt> [num_workers] [config_file]
+uv run borg_crack.py <wordlist.txt> [num_workers] [config_file1] [config_file2] ...
 ```
 
 **Arguments:**
-- `wordlist.txt`: Path to password wordlist (one password per line)
-- `num_workers`: Number of worker processes (default: CPU count)
-- `config_file`: Path to Borg repository config file (default: `config`)
+
+-   `wordlist.txt`: Path to password wordlist (one password per line)
+-   `num_workers`: Number of worker processes (default: CPU count)
+-   `config_file...`: Path(s) to Borg repository config file(s) (default: `input/config`)
 
 **Examples:**
+
 ```bash
 # Use all CPU cores with default config location
 uv run borg_crack.py passwords.txt
@@ -86,16 +91,27 @@ uv run borg_crack.py passwords.txt 8 /path/to/borg/config
 
 # Specify config file only (uses all cores)
 uv run borg_crack.py passwords.txt /path/to/config
+
+# Crack multiple repositories at once with default workers
+uv run borg_crack.py passwords.txt config1 config2 config3
+# or
+uv run borg_crack.py passwords.txt config*
+
+# Crack multiple repositories with 8 workers
+uv run borg_crack.py passwords.txt 8 config1 config2 config3
 ```
 
 **Output:**
-When a password is found, it's displayed on screen and appended to `output/found_passwords.txt` with metadata:
+When a password is found, it's saved to `output/found_passwords.txt` and displayed on screen:
+
 ```
 # Cracked on 2025-10-21 23:45:12
-# Config file: sample/config
 # Wordlist file: sample/wordlist_combined.txt
+Config: sample/config
 Password: correcthorsebatterystaple
 ```
+
+When cracking multiple configs, each found password is saved immediately with its corresponding config file.
 
 **Performance:**
 On a Ryzen 5 5600X utilizing 12 workers, I get around 190 pw/sec.
@@ -105,40 +121,47 @@ On a Ryzen 5 5600X utilizing 12 workers, I get around 190 pw/sec.
 ### Borg Key Format
 
 As described in the [Docs](https://borgbackup.readthedocs.io/en/stable/internals/data-structures.html#key-files), Borg uses a keyfile encrypted with PBKDF2-HMAC-SHA256. The `config` file contains a base64-encoded msgpack structure with:
-- `salt`: Random salt for key derivation
-- `iterations`: PBKDF2 iteration count (typically 100,000)
-- `hash`: HMAC-SHA256 of the decrypted key
-- `data`: AES-CTR encrypted repository key
-- `algorithm`: Encryption algorithm identifier
+
+-   `salt`: Random salt for key derivation
+-   `iterations`: PBKDF2 iteration count (typically 100,000)
+-   `hash`: HMAC-SHA256 of the decrypted key
+-   `data`: AES-CTR encrypted repository key
+-   `algorithm`: Encryption algorithm identifier
 
 ### Cracking Process
 
-1. Load the encrypted key from the Borg config file
-2. Extract salt, iterations, and expected hash
+1. Load the encrypted key(s) from the Borg config file(s)
+2. Extract salt, iterations, and expected hash for each config
 3. For each password in the wordlist:
-   - Derive KEK (Key Encryption Key) using PBKDF2 with the password
-   - Decrypt the repository key using AES-CTR
-   - Compute HMAC-SHA256 of decrypted data
-   - Compare with expected hash
-4. If hashes match, password is correct
+    - Derive KEK (Key Encryption Key) using PBKDF2 with the password
+    - Test against all config files:
+        - Decrypt the repository key using AES-CTR
+        - Compute HMAC-SHA256 of decrypted data
+        - Compare with expected hash
+    - If hashes match, password is saved immediately
+4. Continue until all configs are cracked or wordlist is exhausted
+
+**Performance Note:** When testing multiple configs, the expensive PBKDF2 operation (100,000+ iterations) is only performed **once per password**, then the derived key is tested against all configs. This means testing 3 repositories adds minimal overhead compared to testing just one!
 
 ## Dependencies
 
-- Python 3.13+
-- `msgpack` - MessagePack serialization
-- `pycryptodome` - Cryptographic primitives (PBKDF2, AES, HMAC)
+-   Python 3.13+
+-   `msgpack` - MessagePack serialization
+-   `pycryptodome` - Cryptographic primitives (PBKDF2, AES, HMAC)
 
 ## Ethical Use
 
 This tool is intended for **legitimate password recovery only**:
-- Recovering passwords to your own Borg backups
-- Authorized security testing with explicit permission
-- Educational purposes in controlled environments
+
+-   Recovering passwords to your own Borg backups
+-   Authorized security testing with explicit permission
+-   Educational purposes in controlled environments
 
 **Do not use this tool to:**
-- Access backups you don't own or have permission to access
-- Perform unauthorized access attempts
-- Violate terms of service or applicable laws
+
+-   Access backups you don't own or have permission to access
+-   Perform unauthorized access attempts
+-   Violate terms of service or applicable laws
 
 ## License
 
